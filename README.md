@@ -1,85 +1,87 @@
 # Codex Guard
 
-本项目用于在 macOS + Ghostty 场景下守护 Codex 会话。
+[English](./README.md) | [简体中文](./README.zh-CN.md)
 
-它会发现当前机器上的 Codex 进程，把指定进程绑定到对应的 Ghostty 终端，并在以下场景自动补发继续提示词：
+This project is designed to guard Codex sessions in a macOS + Ghostty environment.
 
-- 输出中断
-- 网络或上下文异常导致会话停住
-- 会话仍有待完成任务，但长时间没有新输出
-- 助手询问是否继续实施/执行改动时自动输入 `y`
+It discovers Codex processes on the current machine, binds a selected process to the matching Ghostty terminal, and automatically sends a continue prompt in the following cases:
 
-默认继续提示词：
+- output is interrupted
+- the session stalls because of network or context issues
+- the session still has unfinished work, but no new output appears for a long time
+- the assistant asks whether to continue implementation or apply changes, in which case it automatically types `y`
+
+Default continue prompt:
 
 ```text
-继续，刚才中断了。请从上次停下的位置继续，不要重复已经完成的内容。
+Continue, the previous response was interrupted. Please resume from where you stopped and do not repeat work that is already finished.
 ```
 
-## 环境要求
+## Requirements
 
 - macOS
 - Ghostty
-- 本机正在运行 Codex CLI
-- 当前用户可访问 `~/.codex` 下的会话和日志
+- Codex CLI running locally
+- the current user can access sessions and logs under `~/.codex`
 
-默认目录：
+Default paths:
 
 - `CODEX_HOME=~/.codex`
 - `CODEX_GUARD_HOME=~/.codex-guard`
-- 状态文件：`~/.codex-guard/state.json`
+- state file: `~/.codex-guard/state.json`
 
-## 安装
+## Installation
 
 ```bash
 npm install
 npm run build
 ```
 
-## CLI 用法
+## CLI Usage
 
-查看帮助：
+Show help:
 
 ```bash
 node dist/cli.js --help
 ```
 
-查看当前 Codex 进程：
+List current Codex processes:
 
 ```bash
 node dist/cli.js list
 ```
 
-绑定指定进程：
+Bind a specific process:
 
 ```bash
 node dist/cli.js bind <pid>
 ```
 
-示例：
+Example:
 
 ```bash
 node dist/cli.js bind 58256
 ```
 
-启动持续监听：
+Start continuous monitoring:
 
 ```bash
 node dist/cli.js watch <pid>
 ```
 
-只执行一次检测：
+Run a single check:
 
 ```bash
 node dist/cli.js watch <pid> --once
 ```
 
-手动触发一次继续：
+Manually trigger one continue action:
 
 ```bash
 node dist/cli.js trigger <pid>
 ```
 
-推荐命令行流程：
+Recommended command-line workflow:
 
 ```bash
 node dist/cli.js list
@@ -87,129 +89,127 @@ node dist/cli.js bind 58256
 node dist/cli.js watch 58256
 ```
 
-## Web 控制台
+## Web Console
 
-启动：
+Start:
 
 ```bash
 npm run web
 ```
 
-默认地址：
+Default URL:
 
 ```text
 http://127.0.0.1:4312
 ```
 
-自定义端口：
+Custom port:
 
 ```bash
 PORT=4312 npm run web
 ```
 
-当前页面支持：
+The current page supports:
 
-- 查看本机所有 Codex 进程
-- 显示 `PID / TTY / 会话摘要 / 工作目录 / 状态`
-- 显示最近活动时间、会话短 ID、触发次数
-- 绑定终端
-- 启动监听
-- 自动刷新，默认 `1 分钟`
+- viewing all Codex processes on the machine
+- showing `PID / TTY / session summary / working directory / status`
+- showing recent activity time, short session ID, and trigger count
+- binding a terminal
+- starting monitoring
+- auto refresh, default `1 minute`
 
-自动刷新频率可选：
+Available auto-refresh intervals:
 
-- `15 秒`
-- `30 秒`
-- `1 分钟`
-- `5 分钟`
-- `关闭`
+- `15 seconds`
+- `30 seconds`
+- `1 minute`
+- `5 minutes`
+- `Off`
 
-推荐 Web 流程：
+Recommended Web workflow:
 
-1. 启动 `npm run web`
-2. 打开 `http://127.0.0.1:4312`
-3. 找到目标 Codex 进程
-4. 点击“绑定终端”
-5. 点击“启动监听”
+1. Start `npm run web`
+2. Open `http://127.0.0.1:4312`
+3. Find the target Codex process
+4. Click `Bind Terminal`
+5. Click `Start Watch`
 
-## 自动恢复规则
+## Auto-Recovery Rules
 
-当前默认参数：
+Current default parameters:
 
-- 轮询频率：`5s`
-- 空闲超时：`120s`
-- 冷却时间：`180s`
-- 自动继续上限：无限
+- polling interval: `5s`
+- idle timeout: `120s`
+- cooldown: `180s`
+- auto-continue limit: unlimited
 
-会触发自动继续的两类情况：
+Automatic continue is triggered in two cases:
 
-1. 命中可恢复错误，例如：
-   `stream interrupted`、`timed out`、`connection lost`、`error`、`failed`
-2. 会话仍有待完成任务，但超过 `120s` 没有新活动
+1. A recoverable error is matched, for example:
+   `stream interrupted`, `timed out`, `connection lost`, `error`, `failed`
+2. The session still has unfinished work, but there has been no new activity for more than `120s`
 
-冷却期内不会重复触发。
+No duplicate trigger is sent during the cooldown period.
 
-另外，守护进程还会识别类似 `Ready to execute?`、`是否实施` 这类确认型提示，
-并自动向绑定终端输入 `y`。同一条确认提示只会自动确认一次。
+In addition, the guard process recognizes confirmation prompts such as `Ready to execute?` and `是否实施`, then automatically types `y` into the bound terminal. The same confirmation prompt is auto-confirmed only once.
 
-## 绑定规则
+## Binding Rules
 
-`bind <pid>` 成功的前提：
+`bind <pid>` succeeds only when:
 
-- 该 `pid` 是有效的 Codex 进程
-- Ghostty 中存在同工作目录终端
-- 同工作目录终端必须能唯一匹配，或者你显式指定 `terminal-id`
+- the `pid` is a valid Codex process
+- a Ghostty terminal with the same working directory exists
+- the matching terminal is unique, or you explicitly provide `terminal-id`
 
-如果同一目录开了多个 Ghostty 标签页，且标题也无法唯一判定：
+If multiple Ghostty tabs are open under the same directory and the title still cannot identify one uniquely:
 
-- Web 控制台会弹出候选终端列表，让你选择要绑定的终端
-- CLI 可以执行 `bind <pid> <terminal-id>` 完成绑定
+- the Web console shows a list of candidate terminals for you to choose from
+- the CLI can run `bind <pid> <terminal-id>` to complete the binding
 
-## 常见问题
+## FAQ
 
-### `bind` 失败
+### `bind` fails
 
-通常是下面几类原因：
+Common causes:
 
-- 进程不存在
-- 进程不是 Codex
-- 找不到对应 Ghostty 终端
-- 候选 Ghostty 终端不唯一
+- the process does not exist
+- the process is not Codex
+- the matching Ghostty terminal cannot be found
+- multiple Ghostty terminals match
 
-如果 CLI 输出了候选终端列表，复制其中一个 `terminal-id` 重新执行
-`bind <pid> <terminal-id>` 即可。
+If the CLI prints a list of candidate terminals, copy one `terminal-id` and rerun `bind <pid> <terminal-id>`.
 
-### `watch` 提示 `No saved binding found`
+### `watch` says `No saved binding found`
 
-说明你还没有先执行 `bind`。
+This means you have not run `bind` first.
 
-### 已绑定但没有自动恢复
+### A process is bound, but auto-recovery does not happen
 
-优先检查：
+Check these first:
 
-- 进程是否仍在运行
-- Ghostty 是否仍在运行
-- 会话文件和 `codex-tui.log` 是否还在更新
-- 是否处于冷却期
+- whether the process is still running
+- whether Ghostty is still running
+- whether the session files and `codex-tui.log` are still updating
+- whether the guard is in the cooldown period
 
-### 绑定关系错了怎么清理
+### How to clear an incorrect binding
 
-当前版本帮助文本里会显示 `unbind` 和 `daemon`，但这两个命令还没有实现。
+The current help text shows `unbind` and `daemon`, but those two commands are not implemented yet.
 
-如果你要清空绑定状态，可以删除状态文件：
+If you want to clear the binding state, delete the state file:
 
 ```bash
 rm -f ~/.codex-guard/state.json
 ```
 
-然后重新执行 `bind`。
+Then run `bind` again.
 
-## 相关源码
+## Related Source Files
 
-- `src/cli.ts`：命令行入口
-- `src/web.ts`：Web 控制台
-- `src/detector.ts`：恢复判定逻辑
-- `src/monitor.ts`：监听执行逻辑
-- `src/process-discovery.ts`：Codex 进程发现
-- `src/ghostty.ts`：Ghostty 集成
-- `src/state.ts`：状态存储
+- `src/cli.ts`: command-line entry
+- `src/web.ts`: Web console
+- `src/detector.ts`: recovery decision logic
+- `src/monitor.ts`: monitoring execution logic
+- `src/process-discovery.ts`: Codex process discovery
+- `src/ghostty.ts`: Ghostty integration
+- `src/state.ts`: state storage
