@@ -1,0 +1,20 @@
+{
+  "name": "codex-guard",
+  "version": "0.1.0",
+  "description": "Monitor and auto-recover interactive Codex CLI sessions on macOS Ghostty.",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "codex-guard": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsx --test test/**/*.test.ts",
+    "web": "tsx src/web.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
